@@ -43,6 +43,10 @@ class Reaction:
 
         self.beam_energy = beam_energy
 
+    @property
+    def is_elastic(self) -> bool:
+        return self.beam == self.fragment
+
     def __residual_nuclei(self) -> Nuclei:
         nuclon = (self.beam.nuclons + self.target.nuclons) - self.fragment.nuclons
         charge = (self.beam.charge + self.target.charge) - self.fragment.charge
@@ -99,12 +103,14 @@ class Reaction:
         )
     
     @staticmethod
-    def __r_factor(beam_mass: float, beam_energy: float, instance_mass: float, partner_mass: float, angle: float) -> float:
+    def __r_factor(beam_mass: float, beam_energy: float, 
+                   instance_mass: float, partner_mass: float, angle: float) -> float:
         numerator = np.sqrt(beam_mass * instance_mass * beam_energy) * np.cos(angle)
         return numerator / (instance_mass + partner_mass)
 
     @staticmethod
-    def __s_factor(beam_mass: float, beam_energy: float, instance_mass: float, partner_mass: float, reaction_quit: float) -> float:
+    def __s_factor(beam_mass: float, beam_energy: float, 
+                   instance_mass: float, partner_mass: float, reaction_quit: float) -> float:
         numerator = beam_energy * (partner_mass - beam_mass) + partner_mass * reaction_quit
         return numerator / (instance_mass + partner_mass)
     
