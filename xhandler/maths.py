@@ -20,8 +20,8 @@ class Gaussian:
             f'exp(-(x - {np.round(self.peak_center, 3)})^2 / 2{np.round(self.dispersion(), 3)})'
 
         if fwhm_view:
-            func += f'{np.round(self.area, 3)} / ({np.round(self.fwhm, 3)} * sqrt(pi / 4ln2)) * ' \
-            f'exp(- 4ln2 * (x - {np.round(self.peak_center, 3)})^2 / {np.round(self.fwhm ** 2, 3)}))'
+            func += f'{np.round(self.area, 3)} / ({np.round(self.fwhm(), 3)} * sqrt(pi / 4ln2)) * ' \
+            f'exp(- 4ln2 * (x - {np.round(self.peak_center, 3)})^2 / {np.round(self.fwhm() ** 2, 3)}))'
 
         return func
     
@@ -29,10 +29,11 @@ class Gaussian:
         def gauss(x, a, d):
             return a * np.exp(-(x - self.peak_center) ** 2 / (2 * d ** 2))
 
-        parameters = curve_fit(gauss, self.xdata, self.ydata, bounds=(0, np.inf))
+        parameters = curve_fit(gauss, self.xdata, self.ydata)
 
         area = parameters[0][0] * np.sqrt(2 * np.pi * parameters[0][1] ** 2)
         fwhm = parameters[0][1] * (2 * np.sqrt(2 * np.log(2)))
+
         return (area, fwhm)
 
     def fwhm(self) -> np.float64:

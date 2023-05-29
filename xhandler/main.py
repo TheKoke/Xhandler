@@ -140,7 +140,19 @@ class Commandor:
             return 'That is a big deal. Save it to apply your changes.'
 
     def write_down(self) -> str:
-        pass
+        self.__show_analyzed_spectres()
+
+        answer = input('Type here: ')
+
+        if answer.isdigit() and answer in self.workbooker.analyzed_spectres:
+            self.workbooker.write(str(self.analitics))
+            return 'Analyzed parameters was wroted to workbook.'
+        else:
+            return 'Cannot find this angle inside analyzed ones.'
+
+    def __show_analyzed_spectres(self) -> None:
+        print('Choose the angle in analyzed spectrums angles:')
+        print(self.workbooker.analyzed_spectres)
 
     def change(self) -> str:
         pass
