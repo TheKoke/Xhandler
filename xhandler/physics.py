@@ -20,6 +20,9 @@ class Nuclei:
         self.charge = charge
         self.mass_excess = self.__mass_excess()
 
+    def __str__(self) -> str:
+        return f'A: {self.nuclons}, Z: {self.charge}'
+
     def __mass_excess(self) -> float:
         return MASS_EXCESSES[(self.charge, self.nuclons)]
 
