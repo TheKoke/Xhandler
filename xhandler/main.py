@@ -69,7 +69,7 @@ class Observer:
         self.axes.plot(gauss.three_sigma(), gauss.function(), color='red')
         self.figure.canvas.draw()
 
-
+#TODO: Implement all class.
 class Commandor:
     def __init__(self, path_to_find: str) -> None:
         self.sleuth = Sleuth(path_to_find)
@@ -77,10 +77,12 @@ class Commandor:
         self.workbooker = WorkbookMaster(path_to_find + '\\workbook.txt')
 
         self.analitics: Analytics = None
+        self.reaction: Reaction = None
 
         self.is_spectrum_opened = False
 
     def main(self) -> None:
+        self.reaction = self.take_reaction()
         while True:
             print(self.show_possible_commands())
 
@@ -105,6 +107,9 @@ class Commandor:
             case 'save': return self.save()
             case _: return self.error_message()
 
+    def take_reaction(self) -> Reaction:
+        pass
+
     def open(self) -> str:
         print('Finded angles:')
         print(self.sleuth.angles)
@@ -126,7 +131,7 @@ class Commandor:
 
         self.observer.draw_uncalibrated_spectrum(spectrum)
 
-        self.analitics = Analytics(spectrum, pretend)
+        self.analitics = Analytics(spectrum, self.reaction, pretend)
         self.is_spectrum_opened = True
 
     def close(self) -> str:
@@ -152,7 +157,7 @@ class Commandor:
 
     def __show_analyzed_spectres(self) -> None:
         print('Choose the angle in analyzed spectrums angles:')
-        print(self.workbooker.analyzed_spectres)
+        print(self.workbooker.gather_analyzed())
 
     def change(self) -> str:
         pass
@@ -173,15 +178,15 @@ class Commandor:
         return '404 Error... Command not found.'
     
     def __collect_analyzed(self) -> list[Analytics]:
-        pass
+        return self.workbooker.gather_analyzed()
 
 
 def startup() -> None:
     print('!!!!!START PROCESSING!!!!!')
     print("Welcome to command-promt software to analyze nuclear reaction's spectrums.")
-    print('This version for C12 + B10 reaction, for more download the full-version.\n\n')
+    # print('This version for C12 + B10 reaction, for more download the full-version.\n\n')
 
-    path = os.getcwd() + '\\fragment'
+    path = input('Please write the path to spactres: ')
     main_commandor = Commandor(path)
 
     loop = threading.Thread(target=main_commandor.main)

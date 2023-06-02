@@ -3,32 +3,15 @@ from maths import *
 from physics import *
 
 
-CARBON_STATES = [0, 4.4439, 7.6541, 9.6410]
-BORON_STATES = [0, 0.7184, 1.7401, 2.1543]
-STATES = {
-    'fragment': CARBON_STATES,
-    'residual': BORON_STATES
-}
-
-BEAM, TARGET = Nuclei(10, 5), Nuclei(12, 6)
-BEAM_ENERGY = 41.3
-
-FRAGMENT_REACTION = Reaction(BEAM, TARGET, BEAM, BEAM_ENERGY)
-RESIDUAL_REACTION = Reaction(TARGET, BEAM, TARGET, BEAM_ENERGY)
-REACTIONS = {
-    'fragment': FRAGMENT_REACTION,
-    'residual': RESIDUAL_REACTION
-}
-
-
 class Peak:
-    PEAK_WIDTH = 20
     def __init__(self, x_data: np.ndarray, y_data: np.ndarray, center_index: int) -> None:
         self.x_data = x_data
         self.y_data = y_data
 
         self.mu_index = center_index
         self.mu = self.x_data[center_index]
+
+        self.PEAK_WIDTH = len(x_data) // 50
 
         self.gaussian = self.approximate()
 
@@ -42,12 +25,12 @@ class Peak:
 
 
 class Analytics:
-    def __init__(self, spectrum: np.ndarray, angle: float, reaction_type: str = 'fragment') -> None:
+    def __init__(self, spectrum: np.ndarray, reaction: Reaction, angle: float) -> None:
         self.angle = angle
         self.spectrum = spectrum
 
-        self.reaction = REACTIONS[reaction_type]
-        self.states = STATES[reaction_type]
+        self.reaction = reaction
+        self.states = reaction.residual.states
 
         self.theory_peaks = [self.reaction.fragment_energy(state, angle) for state in self.states]
 
@@ -66,7 +49,7 @@ class Analytics:
         info += 'Carbon state, MeV'.center(20) + '\t' + 'center, MeV'.center(15) + '\t' 
         info += 'fwhm, MeV'.center(15) + '\t' + 'area'.center(15) + '\n'
         for i in range(len(self.peaks)):
-            info += str(round(CARBON_STATES[i], 3)).center(20) + '\t'
+            info += str(round(self.states[i], 3)).center(20) + '\t'
             info += str(round(self.peaks[i].mu, 3)).center(15) + '\t'
             info += str(round(self.peaks[i].gaussian.fwhm(), 3)).center(15) + '\t'
             info += str(round(self.peaks[i].gaussian.area, 3)).center(15) + '\n'

@@ -9,11 +9,13 @@ class WorkbookParser:
         self.path = path
         self.spectres_path = spectres_path
 
-    def find_angle(self, angle: float) -> Analytics:
-        return next(analyzed for analyzed in self.collect_all_prepared() if analyzed.angle == angle)
+        self.all = self.collect_all()
 
-    def collect_all_prepared(self) -> list[Analytics]:
-        all_reports = open(self.spectres_path, 'r').read().split('\n\n')
+    def find_angle(self, angle: float) -> Analytics:
+        return next(analyzed for analyzed in self.all if analyzed.angle == angle)
+
+    def collect_all(self) -> list[Analytics]:
+        all_reports = open(self.spectres_path, 'r').read().split('\n\n')[1:]
         return [self.reverse_parameters(report) for report in all_reports]
 
     def reverse_parameters(self, report: str) -> Analytics:
@@ -29,30 +31,47 @@ class WorkbookParser:
         return np.loadtxt(path + f'{int(angle)}.txt')
 
     def __get_angle(self, report: str) -> float:
-        pass
+        fidusial_index = report.index('angle') - 2
+        return float(report[:fidusial_index])
 
     def __get_calibration_constants(self, report: str) -> tuple[float, float]:
-        pass
+        equation = self.__get_equation(report)
+        parts = equation.split(' + ')
 
+        scale_shift = float(parts[1])
+        scale_value = float(parts[0].split(' * ')[0])
+
+        return (scale_value, scale_shift)
+
+    def __get_equation(self, report: str) -> str:
+        lines = report.split('\n')
+        info_str = 'Calibrated by equation: E(ch) = '
+
+        position = lines[1].index(info_str) + len(info_str)
+        return lines[1][position + 1:]
+
+    #TODO: Implement his method.
     def __get_peaks(self, report: str) -> list[Peak]:
-        pass
+        lines = report.split('\n')
+        info_str = 'Peaks analysis info'
+
+        peaks_analysis_start = next(i for i in range(len(lines)) if info_str in lines[i])
 
 
 class WorkbookMaster:
     def __init__(self, spectres_path: str) -> None:
         self.path = os.getcwd() + '\\workbook.txt'
         self.spectres_path = spectres_path
-        self.analyzed_spectres: list[Analytics] = []
+
+        self.parser = WorkbookParser(self.path, self.spectres_path)
 
     def write(self, message: str) -> None:
-        file = None
-        if 'workbook.txt' in os.listdir(self.path.replace('\\workbook.txt', '')):
-            file = open(self.path, 'a')
-        else:
-            file = open(self.path, 'w')
-
+        file = open(self.path, 'a')
         file.write(message)
         file.close()
+
+    def gather_analyzed(self) -> list[Analytics]:
+        return self.parser.all
 
 
 if __name__ == '__main__':
