@@ -19,7 +19,7 @@ class Peak:
         return Gaussian(
             np.vstack(
                 (self.x_data[self.mu_index - self.PEAK_WIDTH // 2: self.mu_index + self.PEAK_WIDTH // 2],
-                self.y_data[self.mu_index - self.PEAK_WIDTH // 2: self.mu_index + self.PEAK_WIDTH // 2])
+                 self.y_data[self.mu_index - self.PEAK_WIDTH // 2: self.mu_index + self.PEAK_WIDTH // 2])
             )
         )
 

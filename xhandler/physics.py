@@ -16,7 +16,7 @@ class Nuclei:
     
     @property
     def states(self) -> list[float]:
-        pass
+        return STATES[(self.charge, self.nuclons)]
     
     def mass(self, unit: str = 'MeV') -> float:
         if unit == 'MeV':

@@ -15,6 +15,9 @@ class WorkbookParser:
         return next(analyzed for analyzed in self.all if analyzed.angle == angle)
 
     def collect_all(self) -> list[Analytics]:
+        if 'workbook.txt' not in os.listdir(self.path):
+            return []
+
         all_reports = open(self.spectres_path, 'r').read().split('\n\n')[1:]
         return [self.reverse_parameters(report) for report in all_reports]
 
@@ -60,7 +63,7 @@ class WorkbookParser:
 
 class WorkbookMaster:
     def __init__(self, spectres_path: str) -> None:
-        self.path = os.getcwd() + '\\workbook.txt'
+        self.path = os.getcwd()
         self.spectres_path = spectres_path
 
         self.parser = WorkbookParser(self.path, self.spectres_path)
