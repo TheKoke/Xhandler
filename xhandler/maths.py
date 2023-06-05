@@ -24,8 +24,13 @@ class Gaussian:
 
         return func
     
+    def height(self) -> float:
+        return self.ydata[self.peak_index]
+    
     def __approximate(self) -> tuple[float, float]:
         ls_params = self.__least_squares()
+        if np.exp(ls_params[0]) < self.height():
+            ls_params[0] = np.log((np.exp(ls_params[0]) + self.height()) / 2)
 
         dispersion = np.sqrt(-1 / (2 * ls_params[1]))
         area = np.sqrt(2 * np.pi * dispersion ** 2) * np.exp(ls_params[0])

@@ -1,4 +1,4 @@
-import os
+import os, sys
 import threading
 
 from analysis import *
@@ -107,6 +107,7 @@ class Commandor:
             case 'calibrate': return self.calibrate()
             case 'fit peak': return self.fit_peak()
             case 'save': return self.save()
+            case 'quit': self.quit()
             case _: return self.error_message()
 
     def take_reaction(self) -> Reaction:
@@ -174,15 +175,17 @@ class Commandor:
 
         answer = input('Type here: ')
 
-        if answer.isdigit() and answer in self.workbooker.gather_analyzed():
+        if answer.isdigit() and answer in [i.angle for i in CACHED_SPECTRES]:
             self.workbooker.write(str(self.analitics))
             return 'Analyzed parameters was wroted to workbook.'
         else:
             return 'Cannot find this angle inside the analyzed ones.'
 
     def __show_analyzed_spectres(self) -> None:
+        cached = [i.angle for i in CACHED_SPECTRES]
+
         print('Choose the angle in analyzed spectrums angles:')
-        print(self.workbooker.gather_analyzed())
+        print(cached)
 
     def change(self) -> str:
         pass
@@ -224,8 +227,11 @@ class Commandor:
         self.analitics = None
         self.is_spectrum_opened = False
 
-        return f'Spectrum of {CACHED_SPECTRES[-1].angle} degrees was saved.' + \
+        return f'Spectrum of {CACHED_SPECTRES[-1].angle} degree was saved. ' + \
                 'To write this to workbook type *write down*'
+    
+    def quit(self) -> None:
+        pass
 
     def error_message(self) -> str:
         return '404 Error... Command not found.'
@@ -238,7 +244,6 @@ class Commandor:
 def startup() -> None:
     print('!!!!!START PROCESSING!!!!!')
     print("Welcome to command-promt software to analyze nuclear reaction's spectrums.\n\n")
-    # print('This version for C12 + B10 reaction, for more download the full-version.\n\n')
 
     path = input('Please write the PATH to spectres: ')
     main_commandor = Commandor(path)
