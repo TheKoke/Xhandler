@@ -11,7 +11,7 @@ class ReactionNotation(Enum):
 class ReactionMaster:
     def __init__(self, input: str, energy: float) -> None:
         '''
-        Nuclear reaction writes down in 2 different styles:
+        Nuclear reactions can wroted in 2 different styles:
         A(B, C)D - sovetian variant.
         A + B -> C + D - chemistry variant.
         '''
@@ -47,7 +47,7 @@ class ReactionMaster:
         no_spaces = self.reaction.replace(' ', '')
 
         if self.notation == ReactionNotation.UNDEFINED:
-            raise ValueError('Reaction was writed incorrectly.')
+            raise ValueError('Reaction was written incorrectly.')
 
         if self.notation == ReactionNotation.SOVETIAN:
             return ReactionMaster.split_sovetian(no_spaces)

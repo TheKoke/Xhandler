@@ -89,7 +89,11 @@ class Commandor:
             print(self.show_possible_commands())
 
             comm = input('What do we do? Type here: ')
-            print(self.handle_command(comm))
+            msg = self.handle_command(comm)
+            if msg == 'quit':
+                break
+
+            print(msg)
 
     def show_possible_commands(self) -> list[str]:
         if not self.is_spectrum_opened:
@@ -107,13 +111,13 @@ class Commandor:
             case 'calibrate': return self.calibrate()
             case 'fit peak': return self.fit_peak()
             case 'save': return self.save()
-            case 'quit': self.quit()
+            case 'quit': return 'quit'
             case _: return self.error_message()
 
     def take_reaction(self) -> Reaction:
         print('We need info about your nuclear reaction.')
         str_react = input('Please write down analyzing nuclear reaction: ')
-        energy = float(input('Type here beam energy: '))
+        energy = float(input('Type here beam energy (in MeV): '))
 
         return ReactionMaster(str_react, energy).to_reaction()
 
@@ -175,8 +179,9 @@ class Commandor:
 
         answer = input('Type here: ')
 
-        if answer.isdigit() and answer in [i.angle for i in CACHED_SPECTRES]:
-            self.workbooker.write(str(self.analitics))
+        if answer.isdigit() and float(answer) in [i.angle for i in CACHED_SPECTRES]:
+            analyzed = next(i for i in CACHED_SPECTRES if i.angle == float(answer))
+            self.workbooker.write(str(analyzed) + '\n\n')
             return 'Analyzed parameters was wroted to workbook.'
         else:
             return 'Cannot find this angle inside the analyzed ones.'
@@ -199,7 +204,6 @@ class Commandor:
         input('Please, press enter to continue, when you finish selecting of points.\n')
 
         self.analitics.calibrate((int(SELECTED_DOTS_X[-1]), int(SELECTED_DOTS_X[-2])))
-        self.__clear_selected_dots()
 
         energy_view = self.analitics.scale_value * np.arange(1, len(self.analitics.spectrum) + 1)
         energy_view += self.analitics.scale_shift
@@ -219,7 +223,7 @@ class Commandor:
         created = self.analitics.create_peak(SELECTED_DOTS_X[-1])
         self.observer.draw_peak(created)
 
-        return f'Peak at {created.mu} MeV was drawed.'
+        return f'Peak at {round(created.mu, 3)} MeV was drawed.'
 
     def save(self) -> str:
         CACHED_SPECTRES.append(self.analitics)
@@ -229,16 +233,9 @@ class Commandor:
 
         return f'Spectrum of {CACHED_SPECTRES[-1].angle} degree was saved. ' + \
                 'To write this to workbook type *write down*'
-    
-    def quit(self) -> None:
-        pass
 
     def error_message(self) -> str:
         return '404 Error... Command not found.'
-    
-    def __clear_selected_dots(self) -> None:
-        SELECTED_DOTS_X.clear()
-        SELECTED_DOTS_Y.clear()
 
 
 def startup() -> None:

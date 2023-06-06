@@ -9,7 +9,7 @@ class WorkbookParser:
         self.path = path
         self.spectres_path = spectres_path
 
-        self.all = self.collect_all()
+        self.all = None
 
     def find_angle(self, angle: float) -> Analytics:
         return next(analyzed for analyzed in self.all if analyzed.angle == angle)
@@ -18,7 +18,7 @@ class WorkbookParser:
         if 'workbook.txt' not in os.listdir(self.path):
             return []
 
-        all_reports = open(self.spectres_path, 'r').read().split('\n\n')[1:]
+        all_reports = open(self.path + '\\workbook.txt', 'r').read().split('\n\n')[1:]
         return [self.reverse_parameters(report) for report in all_reports]
 
     def reverse_parameters(self, report: str) -> Analytics:
@@ -34,8 +34,8 @@ class WorkbookParser:
         return np.loadtxt(path + f'{int(angle)}.txt')
 
     def __get_angle(self, report: str) -> float:
-        fidusial_index = report.index('angle') - 2
-        return float(report[:fidusial_index])
+        fiducial_index = report.index('angle') - 2
+        return float(report[:fiducial_index])
 
     def __get_calibration_constants(self, report: str) -> tuple[float, float]:
         equation = self.__get_equation(report)
@@ -69,7 +69,7 @@ class WorkbookMaster:
         self.parser = WorkbookParser(self.path, self.spectres_path)
 
     def write(self, message: str) -> None:
-        file = open(self.path, 'a')
+        file = open(self.path + '\\workbook.txt', 'a')
         file.write(message)
         file.close()
 
