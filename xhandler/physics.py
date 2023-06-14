@@ -108,7 +108,54 @@ class Reaction:
                    instance_mass: float, partner_mass: float, reaction_quit: float) -> float:
         numerator = beam_energy * (partner_mass - beam_mass) + partner_mass * reaction_quit
         return numerator / (instance_mass + partner_mass)
+
+
+class Ionization:
+    def __init__(self, stray: Nuclei, environ: Nuclei, detector: str = 'Ge') -> None:
+        self.stray = stray
+        self.environ = environ
+        self.detector = detector
+
+    def energy_loss(self, energy: float, thickness: float) -> None:
+        return self.specific_energy_loss(energy) * thickness
     
+    def specific_energy_loss(self, energy: float) -> float:
+        electron_mass = 0.511 # MeV
+        reduced_planck = 6.582e-22 # MeV * s
+        lightspeed = 3e10 # cm / s
+        fine_structure = 1 / 137 # dimensionless
+
+        e_power_4 = (reduced_planck * lightspeed * fine_structure) ** 2
+        betta_power_2 = self.lorenz_parameter(energy) ** 2
+
+        common = 4 * np.pi * self.electrons_density() * self.stray.charge ** 2 * e_power_4 / (electron_mass * betta_power_2)
+        logarithm = np.log(2 * electron_mass * betta_power_2 / self.mean_environ_excitation())
+        relativistic = np.log(1 - betta_power_2) + betta_power_2
+
+        return common * (logarithm - relativistic)
+
+    def mean_environ_excitation(self) -> float:
+        hydrogen_ionization = 13.6e-6 # MeV
+        return hydrogen_ionization * self.environ.charge
+    
+    def electrons_density(self) -> float:
+        ro = self.__set_ro() # g * sm^-3
+
+        avogadro = 6.02e23 # mol^-1
+        return self.environ.charge * ro * avogadro / self.environ.nuclons # electrons * sm^-3
+    
+    def __set_ro(self) -> float:
+        if self.detector.lower() == 'ge':
+            return 5.323 # g * sm^-3
+        if self.detector.lower() == 'si':
+            return 2.33 # g * sm^-3
+        
+        return 337.8e-6
+    
+    def lorenz_parameter(self, energy: float) -> float:
+        #  dimensionless     MeV          MeV        
+        return np.sqrt(2 * energy / self.stray.mass())
+
 
 if __name__ == '__main__':
     pass

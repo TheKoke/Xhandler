@@ -6,8 +6,6 @@ class Gaussian:
         self.xdata = xy[0]
         self.ydata = xy[1]
 
-        self.ydata[self.ydata == 0] = 1
-
         self.peak_index = len(self.xdata) // 2
         self.peak_center = self.xdata[self.peak_index]
 
@@ -30,35 +28,15 @@ class Gaussian:
         return self.ydata[self.peak_index]
     
     def __approximate(self) -> tuple[float, float]:
-        ls_params = self.__least_squares()
-        if np.exp(ls_params[0]) < self.height():
-            ls_params[0] = np.log((np.exp(ls_params[0]) + self.height()) / 2)
-
-        dispersion = Gaussian.check_resolution(np.sqrt(1 / (2 * abs(ls_params[1]))))
-        area = np.sqrt(2 * np.pi * dispersion ** 2) * np.exp(ls_params[0])
-
-        return (area, dispersion)
-
-    def __least_squares(self) -> tuple[float, float]:
-        xs = (self.xdata - self.peak_center) ** 2
-        ys = np.log(self.ydata)
-
-        coeff_matrix = np.array([[len(xs), xs.sum()], [xs.sum(), (xs ** 2).sum()]])
-        right_side = np.array([ys.sum(), (xs * ys).sum()])
-
-        return np.linalg.solve(coeff_matrix, right_side)
-    
-    # TODO: This is crutch code. Try to implement this checking more safety and legacy.
-    @staticmethod
-    def check_resolution(review_sigma: float) -> float:
         hardware_fwhm = 0.826
-        fwhm = review_sigma * (2 * np.sqrt(2 * np.log(2)))
+        hardware_sigma = hardware_fwhm / (2 * np.sqrt(2 * np.log(2)))
 
-        if fwhm < hardware_fwhm:
-            fwhm = np.sqrt(fwhm ** 2 + hardware_fwhm ** 2)
-            return fwhm / (2 * np.sqrt(2 * np.log(2)))
-        
-        return review_sigma
+        const = 1 / np.sqrt(2 * np.pi * hardware_sigma ** 2)
+        xs = const * np.exp(- (self.xdata - self.peak_center) ** 2 / (2 * hardware_sigma ** 2))
+
+        area = (self.ydata * xs).sum() / (xs ** 2).sum()
+
+        return (area, hardware_sigma)
 
     def fwhm(self) -> np.float64:
         return self.dispersion * (2 * np.sqrt(2 * np.log(2)))
@@ -68,7 +46,7 @@ class Gaussian:
 
     def function(self) -> np.ndarray:
         constant = self.area / np.sqrt(2 * np.pi * self.dispersion ** 2)
-        exp_constant = -1 / (self.dispersion ** 2)
+        exp_constant = -1 / (2 * self.dispersion ** 2)
 
         array_part = (self.three_sigma() - self.peak_center) ** 2
 

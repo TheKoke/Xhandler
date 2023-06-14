@@ -4,39 +4,24 @@ from physics import *
 
 
 class Peak:
-    def __init__(self, x_data: np.ndarray, y_data: np.ndarray, center_index: int) -> None:
+    def __init__(self, x_data: np.ndarray, y_data: np.ndarray, center_index: int, width: int) -> None:
         self.x_data = x_data
         self.y_data = y_data
 
         self.mu_index = center_index
         self.mu = self.x_data[center_index]
 
-        self.width = self.find_width()
+        self.width = width
         self.gaussian = self.approximate()
 
-    def find_width(self) -> int:
-        mean = self.y_data.mean()
-
-        width = 1
-        left_pointer, right_pointer = self.mu_index - 1, self.mu_index + 1
-        while left_pointer >= 0 and right_pointer < len(self.y_data):
-            width += 2
-
-            flag = self.y_data[left_pointer] <= mean and self.y_data[right_pointer] <= mean
-            if flag: break
-
-            left_pointer -= 1
-            right_pointer += 1
-
-        return width
-
     def approximate(self) -> Gaussian:
-        return Gaussian(
-            np.vstack(
-                (self.x_data[self.mu_index - self.width // 2: self.mu_index + self.width // 2],
-                 self.y_data[self.mu_index - self.width // 2: self.mu_index + self.width // 2])
-            )
-        )
+        peak_start = self.mu_index - self.width // 2
+        peak_stop = self.mu_index + self.width // 2
+
+        peak_start = peak_start if peak_start >= 0 else 0
+        peak_stop - peak_stop if peak_stop < len(self.y_data) else len(self.y_data) - 1
+
+        return Gaussian(np.vstack((self.x_data[peak_start: peak_stop], self.y_data[peak_start: peak_stop])))
 
 
 class Analytics:
@@ -47,7 +32,7 @@ class Analytics:
         self.reaction = reaction
         self.states = reaction.residual.states
 
-        self.theory_peaks = [self.reaction.fragment_energy(state, angle) for state in self.states]
+        self.theory_peaks = self.found_theory_peaks()
 
         self.is_calibrated = False
         self.scale_value, self.scale_shift = 0, 0
@@ -73,16 +58,6 @@ class Analytics:
 
         return info
     
-    def truncate_spectrum(self) -> None:
-        count = 0
-        for i in range(len(self.spectrum)):
-            if count >= 50:
-                self.spectrum = self.spectrum[:i - 20]
-                break
-
-            if self.spectrum[i] == 0:
-                count += 1
-
     def calibrate(self, anchors: tuple[int, int]) -> tuple[float, float]:
         anchors = sorted(anchors, reverse=True)
 
@@ -95,27 +70,63 @@ class Analytics:
 
         return (self.scale_value, self.scale_shift)
     
+    # TODO: Fix this crouch. Needs little bit architectural touch.
+    def found_theory_peaks(self) -> list[float]:
+        bete_bloch = Ionization(self.reaction.fragment, Nuclei(58, 34), detector='C4H10')
+
+        collected = []
+        for state in self.states:
+            energy_after_reaction = self.reaction.fragment_energy(state, self.angle)
+            energy_loss = bete_bloch.energy_loss(energy_after_reaction, 4)
+
+            collected.append(energy_after_reaction - energy_loss)
+
+        return collected
+    
     def try_find_peaks(self) -> list[int]:
         if not self.is_calibrated:
             raise RuntimeError('Spectrum must be calibrated before finding peaks.')
+        
+        visible = []
+        for theory in self.theory_peaks:
+            pretend = int((theory - self.scale_shift) / self.scale_value) - 1
+            if pretend < 0:
+                continue
 
-        return [int((theory - self.scale_shift) / self.scale_value) for theory in self.theory_peaks]
+            visible.append(pretend)
 
-    def create_peak(self, center: float) -> Peak:
+        return visible
+
+    def create_peaks(self) -> list[Peak]:
         if not self.is_calibrated:
             raise RuntimeError('Spectrum must be calibrated before creating peaks.')
 
-        center_index = int((center - self.scale_shift) / self.scale_value) - 1
-        maximum = np.array(
-            [self.spectrum[i] for i in range(center_index - 3, center_index + 4)]
-        ).argmax()
+        peak_width = self.define_peak_width()
+        energy_view = self.scale_shift + self.scale_value * np.arange(1, len(self.spectrum) + 1)
 
-        center_index += maximum - 3
+        peaks = self.try_find_peaks()
+        for peak in peaks:
+            self.peaks.append(Peak(energy_view, self.spectrum, peak, peak_width))
 
-        energy_view = np.arange(1, len(self.spectrum) + 1) * self.scale_value + self.scale_shift
+        return self.peaks.copy()
 
-        self.peaks.append(Peak(energy_view, self.spectrum, center_index))
-        return self.peaks[-1]
+    # TODO: Fix this croutch. Also needs architectural touch.
+    def define_peak_width(self) -> int:
+        fwhm = 0.826
+        tenth_width = fwhm / np.log10(2)
+        return int(tenth_width / self.scale_value)
+    
+    def truncate_spectrum(self) -> None:
+        count = 0
+        for i in range(len(self.spectrum)):
+            if count >= 50:
+                self.spectrum = self.spectrum[:i - 20]
+                break
+
+            if self.spectrum[i] == 0:
+                count += 1
+            else:
+                count = 0
 
 
 if __name__ == '__main__':

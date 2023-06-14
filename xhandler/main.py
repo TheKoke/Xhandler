@@ -41,17 +41,19 @@ class Observer:
 
     def select_point(self, event: MouseEvent) -> str | None:
         if event.dblclick:
-            if len(SELECTED_DOTS_X) > 10: SELECTED_DOTS_X.clear()
-            if len(SELECTED_DOTS_Y) > 10: SELECTED_DOTS_Y.clear()
-            
             SELECTED_DOTS_X.append(event.xdata)
             SELECTED_DOTS_Y.append(event.ydata)
 
             print(f'Point (x: {round(event.xdata, 2)}, y: {round(event.ydata, 2)}) was selected.')
         
     def clear_all_stuff(self) -> None:
+        self.clear_selected_dots()
         self.axes.clear()
         self.figure.canvas.draw()
+
+    def clear_selected_dots(self) -> None:
+        SELECTED_DOTS_X.clear()
+        SELECTED_DOTS_Y.clear()
 
     def draw_uncalibrated_spectrum(self, spectrum: np.ndarray) -> None:
         self.axes.clear()
@@ -69,6 +71,10 @@ class Observer:
         gauss = peak.gaussian
 
         self.axes.plot(gauss.three_sigma(), gauss.function(), color='red')
+        self.figure.canvas.draw()
+
+    def scat_dots(self, xs: np.ndarray, ys: np.ndarray) -> None:
+        self.axes.scatter(xs, ys, color='red', label='Theoretical peaks center.')
         self.figure.canvas.draw()
 
 #TODO: Implement all class.
@@ -199,6 +205,9 @@ class Commandor:
         pass
 
     def calibrate(self) -> str:
+        if not self.is_spectrum_opened:
+            return 'First open the spectrum.'
+
         print('You can double click to graph, to pick points on them.')
         print('The last picked 2 points will be used for calibration.')
         input('Please, press enter to continue, when you finish selecting of points.\n')
@@ -207,23 +216,27 @@ class Commandor:
 
         energy_view = self.analitics.scale_value * np.arange(1, len(self.analitics.spectrum) + 1)
         energy_view += self.analitics.scale_shift
+
         self.observer.draw_calibrated_spectrum(self.analitics.spectrum, energy_view)
+
+        peaks_indexes = self.analitics.try_find_peaks()
+        self.observer.scat_dots(self.analitics.theory_peaks[:len(peaks_indexes)], self.analitics.spectrum[peaks_indexes])
 
         return 'calibrated by: ' + \
         f'E(ch) = {round(self.analitics.scale_value, 3)}ch + {round(self.analitics.scale_shift, 3)}'
 
     def fit_peak(self) -> str:
+        if not self.is_spectrum_opened:
+            return 'First open the spectrum.'
+
         if not self.analitics.is_calibrated:
             return 'Spectrum must be calibrated first.'
+        
+        peaks = self.analitics.create_peaks()
+        for peak in peaks:
+            self.observer.draw_peak(peak)
 
-        print('Double click for pick center of peak.')
-        print('This software can analyze only one peak in a row.')
-        input('Please, press the enter to continue.\n')
-
-        created = self.analitics.create_peak(SELECTED_DOTS_X[-1])
-        self.observer.draw_peak(created)
-
-        return f'Peak at {round(created.mu, 3)} MeV was drawed.'
+        return 'All peaks was drown.'
 
     def save(self) -> str:
         CACHED_SPECTRES.append(self.analitics)
