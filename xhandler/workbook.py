@@ -54,11 +54,25 @@ class WorkbookParser:
         return lines[1][position + 1:]
 
     #TODO: Implement his method.
-    def __get_peaks(self, report: str) -> list[Peak]:
+    def __get_peaks(self, report: str) -> list[PeakSupervisor]:
         lines = report.split('\n')
         info_str = 'Peaks analysis info'
 
-        peaks_analysis_start = next(i for i in range(len(lines)) if info_str in lines[i])
+        peaks_start = next(i for i in range(len(lines)) if info_str in lines[i])
+        taken = []
+
+        for i in range(peaks_start + 2, len(lines)):
+            pass
+
+        return taken
+    
+    def __reverse_peak(self, center: float, fwhm: float, calib_coeff: float, calib_e0: float) -> PeakSupervisor:
+        fwtm = fwhm / np.log10(2)
+
+        channel_width = int(fwtm / calib_coeff)
+        center_in_channel = int((center - calib_e0) / calib_coeff)
+
+        spectrum = self.__get_spectrum()
 
 
 class WorkbookMaster:

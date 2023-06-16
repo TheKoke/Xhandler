@@ -11,16 +11,11 @@ class Gaussian:
 
         self.area, self.dispersion = self.__approximate()
 
-    def __str__(self, /, dispersion_view: bool = False, fwhm_view: bool = True) -> str:
+    def __str__(self) -> str:
         func = 'G(x) = '
 
-        if dispersion_view:
-            func += f'{np.round(self.area, 3)} / (sqrt(2pi * {np.round(self.dispersion(), 3)}) * ' \
-            f'exp[-(x - {np.round(self.peak_center, 3)})^2 / 2{np.round(self.dispersion(), 3)}^2]'
-
-        if fwhm_view:
-            func += f'{np.round(self.area, 3)} / ({np.round(self.fwhm(), 3)} * sqrt(pi / 4ln2)) * ' \
-            f'exp(- 4ln2 * (x - {np.round(self.peak_center, 3)})^2 / {np.round(self.fwhm() ** 2, 3)}))'
+        func += f'{np.round(self.area, 3)} / (sqrt(2pi * {np.round(self.dispersion(), 3)}) * '
+        func += f'exp[-(x - {np.round(self.peak_center, 3)})^2 / 2{np.round(self.dispersion(), 3)}^2]'
 
         return func
     
@@ -51,6 +46,41 @@ class Gaussian:
         array_part = (self.three_sigma() - self.peak_center) ** 2
 
         return constant * np.exp(exp_constant * array_part)
+    
+
+class Lorentzian:
+    def __init__(self, xy: np.ndarray, mu: np.ndarray, fwhm: np.ndarray) -> None:
+        self.xdata = xy[0]
+        self.ydata = xy[1]
+
+        self.mu = mu
+        self.fwhm = fwhm
+
+        self.area = self.__approximate()
+
+    def __str__(self) -> str:
+        func = 'L(x) = '
+        func += f'2 * {round(self.area, 3)} / pi'
+        func += f'* [{np.round(self.fwhm, 3)} / ((x - {round(self.mu)})^2 + {round(self.fwhm, 3)}^2)]'
+
+        return func
+
+    def __approximate(self) -> float:
+        xs = 2 / np.pi * (self.fwhm / (4 * (self.xdata - self.mu) ** 2 + self.fwhm ** 2))
+        return (self.ydata * xs).sum() / (xs ** 2).sum()
+    
+    def dispersion(self) -> float:
+        return self.fwhm / (2 * np.sqrt(2 * np.log(2)))
+    
+    def three_sigma(self) -> np.ndarray:
+        sigma = self.dispersion()
+        return np.linspace(-3 * sigma + self.mu, 3 * sigma + self.mu, 50)
+    
+    def pdf(self) -> np.ndarray:
+        constant = 2 * self.area / np.pi
+        brackets = self.fwhm / (4 * (self.three_sigma() - self.mu) ** 2 + self.fwhm ** 2)
+
+        return constant * brackets
 
 
 if __name__ == '__main__':

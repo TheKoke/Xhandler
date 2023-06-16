@@ -3,7 +3,7 @@ from maths import *
 from physics import *
 
 
-class Peak:
+class PeakSupervisor:
     def __init__(self, x_data: np.ndarray, y_data: np.ndarray, center_index: int, width: int) -> None:
         self.x_data = x_data
         self.y_data = y_data
@@ -36,7 +36,7 @@ class Analytics:
 
         self.is_calibrated = False
         self.scale_value, self.scale_shift = 0, 0
-        self.peaks: list[Peak] = []
+        self.peaks: list[PeakSupervisor] = []
 
         self.truncate_spectrum()
 
@@ -97,7 +97,7 @@ class Analytics:
 
         return visible
 
-    def create_peaks(self) -> list[Peak]:
+    def create_peaks(self) -> list[PeakSupervisor]:
         if not self.is_calibrated:
             raise RuntimeError('Spectrum must be calibrated before creating peaks.')
 
@@ -106,7 +106,7 @@ class Analytics:
 
         peaks = self.try_find_peaks()
         for peak in peaks:
-            self.peaks.append(Peak(energy_view, self.spectrum, peak, peak_width))
+            self.peaks.append(PeakSupervisor(energy_view, self.spectrum, peak, peak_width))
 
         return self.peaks.copy()
 
