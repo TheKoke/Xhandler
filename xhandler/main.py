@@ -67,7 +67,7 @@ class Observer:
         self.axes.plot(energy_view, spectrum)
         self.figure.canvas.draw()
 
-    def draw_peak(self, peak: Peak) -> None:
+    def draw_peak(self, peak: PeakSupervisor) -> None:
         gauss = peak.gaussian
 
         self.axes.plot(gauss.three_sigma(), gauss.function(), color='red')
