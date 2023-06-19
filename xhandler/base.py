@@ -8,11 +8,11 @@ class Peak:
         self.__area = 1
 
     @property
-    def center(self) -> float:
+    def mu(self) -> float:
         return self.__mu
     
-    @center.setter
-    def center(self, input: float) -> None:
+    @mu.setter
+    def mu(self, input: float) -> None:
         self.__mu = input
 
     @property
@@ -35,13 +35,30 @@ class Peak:
             raise ValueError("Area of peak should be greater than zero.")
         self.__area = input
 
+    @property
+    def hwhm(self) -> float:
+        return self.__fwhm / 2
+
 
 class Notebook:
     def __init__(self) -> None:
+        self.__angle = 0
         self.__spectrum = np.array([])
 
         self.__scale_value = 0
         self.__scale_shift = 0
+
+        self.__peaks: list[Peak] = list()
+
+    @property
+    def angle(self) -> float:
+        return self.__angle
+    
+    @angle.setter
+    def angle(self, pretend: float) -> None:
+        if pretend <= 0 or pretend > 180:
+            raise ValueError("Reaction angle must be in interval: 0 < angle <= 180")
+        self.__angle = pretend
 
     @property
     def spectrum(self) -> np.ndarray:
@@ -80,6 +97,18 @@ class Notebook:
         if input < 0:
             raise ValueError("Scale shift can't be negative.")
         self.__scale_shift = input
+
+    @property
+    def is_calibrated(self) -> bool:
+        return not self.__scale_value == 0 and self.__scale_shift == 0
+
+    @property
+    def peaks(self) -> list[Peak]:
+        return self.__peaks
+    
+    @peaks.setter
+    def peaks(self, pretend: list[Peak]) -> None:
+        self.__peaks = pretend
 
 
 if __name__ == '__main__':

@@ -1,22 +1,26 @@
 import numpy as np
-from global_const import *
+from global_const import MASS_EXCESSES, STATES
 
 
 class Nuclei:
     def __init__(self, nuclons: int, charge: int) -> None:
         self.nuclons = nuclons
         self.charge = charge
-        self.mass_excess = self.__mass_excess()
 
     def __str__(self) -> str:
         return f'A: {self.nuclons}, Z: {self.charge}'
 
-    def __mass_excess(self) -> float:
+    @property
+    def mass_excess(self) -> float:
         return MASS_EXCESSES[(self.charge, self.nuclons)]
     
     @property
     def states(self) -> list[float]:
         return STATES[(self.charge, self.nuclons)]
+    
+    @property
+    def wigner_width(self) -> list[float]:
+        pass
     
     def mass(self, unit: str = 'MeV') -> float:
         if unit == 'MeV':

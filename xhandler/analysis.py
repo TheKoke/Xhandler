@@ -1,60 +1,76 @@
 import numpy as np
-from maths import *
-from physics import *
+from base import Notebook, Peak
+from maths import Lorentzian
+from physics import Reaction, Nuclei, Ionization
 
 
 class PeakSupervisor:
-    def __init__(self, x_data: np.ndarray, y_data: np.ndarray, center_index: int, width: int) -> None:
+    def __init__(self, x_data: np.ndarray, y_data: np.ndarray, center: float, fwhm: float) -> None:
         self.x_data = x_data
         self.y_data = y_data
 
-        self.mu_index = center_index
-        self.mu = self.x_data[center_index]
+        self.mu = center
+        self.mu_index = np.abs(np.subtract(x_data, center)).argmin()
 
-        self.width = width
-        self.gaussian = self.approximate()
+        self.fwhm = fwhm
+        self.lorentzian = self.approximate()
 
-    def approximate(self) -> Gaussian:
-        peak_start = self.mu_index - self.width // 2
-        peak_stop = self.mu_index + self.width // 2
+        self.base = Peak()
+
+    def approximate(self) -> Lorentzian:
+        peak_start = self.mu_index - self.width() // 2
+        peak_stop = self.mu_index + self.width() // 2
 
         peak_start = peak_start if peak_start >= 0 else 0
         peak_stop - peak_stop if peak_stop < len(self.y_data) else len(self.y_data) - 1
 
-        return Gaussian(np.vstack((self.x_data[peak_start: peak_stop], self.y_data[peak_start: peak_stop])))
+        area = self.tuck_up_area(self.x_data[peak_start: peak_stop], self.y_data[peak_start: peak_stop])
+        self.__save_params(self.mu, self.fwhm, area)
+        return Lorentzian(self.mu, self.fwhm, area)
+    
+    def width(self) -> int:
+        scale_value = (self.x_data[-1] - self.x_data[0]) / len(self.x_data)
+        tenth_width = self.fwhm / np.log10(2)
+        return int(tenth_width / scale_value)
+    
+    def tuck_up_area(self, xdata: np.ndarray, ydata: np.ndarray) -> float:
+        xs = 2 / np.pi * (self.fwhm / (4 * (xdata - self.mu) ** 2 + self.fwhm ** 2))
+        return (ydata * xs).sum() / (xs ** 2).sum()
+    
+    def __save_params(self, mu: float, fwhm: float, area: float) -> None:
+        self.base.mu = mu
+        self.base.fwhm = fwhm
+        self.base.area = area
 
 
 class Analytics:
     def __init__(self, spectrum: np.ndarray, reaction: Reaction, angle: float) -> None:
-        self.angle = angle
-        self.spectrum = spectrum
+        self.basenote = Notebook()
+
+        self.basenote.angle = angle
+        self.basenote.spectrum = spectrum
 
         self.reaction = reaction
-        self.states = reaction.residual.states
-
         self.theory_peaks = self.found_theory_peaks()
 
-        self.is_calibrated = False
-        self.scale_value, self.scale_shift = 0, 0
-        self.peaks: list[PeakSupervisor] = []
-
+        self.peaks: list[Peak] = []
         self.truncate_spectrum()
 
     def __str__(self) -> str:
         self.peaks = sorted(self.peaks, key=lambda peak: peak.mu, reverse=True)
 
-        info = f'{self.angle} - angle spectrum analysis: \n'
+        info = f'{self.basenote.spectrum} - angle spectrum analysis: \n'
         info += 'Calibrated by equation: E(ch) = ' + \
-        f'{round(self.scale_value, 3)} * ch + {round(self.scale_shift, 3)}\n'
+        f'{round(self.basenote.scale_value, 3)} * ch + {round(self.basenote.scale_shift, 3)}\n'
 
         info += f'--Peaks analysis info--'.center(66) + '\n'
         info += 'Fragment state, MeV'.center(20) + '\t' + 'center, MeV'.center(15) + '\t' 
         info += 'fwhm, MeV'.center(15) + '\t' + 'area'.center(15) + '\n'
         for i in range(len(self.peaks)):
-            info += str(round(self.states[i], 3)).center(20) + '\t'
+            info += str(round(self.reaction.residual.states[i], 3)).center(20) + '\t'
             info += str(round(self.peaks[i].mu, 3)).center(15) + '\t'
-            info += str(round(self.peaks[i].gaussian.fwhm(), 3)).center(15) + '\t'
-            info += str(round(self.peaks[i].gaussian.area, 3)).center(15) + '\n'
+            info += str(round(self.peaks[i].fwhm, 3)).center(15) + '\t'
+            info += str(round(self.peaks[i].area, 3)).center(15) + '\n'
 
         return info
     
@@ -65,18 +81,16 @@ class Analytics:
         right_side = np.array([self.theory_peaks[0], self.theory_peaks[1]])
         solution = np.linalg.solve(matrix, right_side)
 
-        self.scale_value, self.scale_shift = solution[0], solution[1]
-        self.is_calibrated = True
-
-        return (self.scale_value, self.scale_shift)
+        self.basenote.scale_value, self.basenote.scale_shift = solution[0], solution[1]
+        return (self.basenote.scale_value, self.basenote.scale_shift)
     
     # TODO: Fix this crouch. Needs little bit architectural touch.
     def found_theory_peaks(self) -> list[float]:
         bete_bloch = Ionization(self.reaction.fragment, Nuclei(58, 34), detector='C4H10')
 
         collected = []
-        for state in self.states:
-            energy_after_reaction = self.reaction.fragment_energy(state, self.angle)
+        for state in self.reaction.residual.states:
+            energy_after_reaction = self.reaction.fragment_energy(state, self.basenote.angle)
             energy_loss = bete_bloch.energy_loss(energy_after_reaction, 4)
 
             collected.append(energy_after_reaction - energy_loss)
@@ -84,12 +98,12 @@ class Analytics:
         return collected
     
     def try_find_peaks(self) -> list[int]:
-        if not self.is_calibrated:
+        if not self.basenote.is_calibrated:
             raise RuntimeError('Spectrum must be calibrated before finding peaks.')
         
         visible = []
         for theory in self.theory_peaks:
-            pretend = int((theory - self.scale_shift) / self.scale_value) - 1
+            pretend = int((theory - self.basenote.scale_shift) / self.basenote.scale_value) - 1
             if pretend < 0:
                 continue
 
@@ -97,33 +111,30 @@ class Analytics:
 
         return visible
 
-    def create_peaks(self) -> list[PeakSupervisor]:
-        if not self.is_calibrated:
+    def create_peaks(self) -> list[Peak]:
+        if not self.basenote.is_calibrated:
             raise RuntimeError('Spectrum must be calibrated before creating peaks.')
 
-        peak_width = self.define_peak_width()
-        energy_view = self.scale_shift + self.scale_value * np.arange(1, len(self.spectrum) + 1)
+        for i in range(len(self.theory_peaks)):
+            xs = self.basenote.energy_view
+            ys = self.basenote.spectrum
+            center = self.theory_peaks[i]
+            gamma = self.reaction.residual.wigner_width[i]
 
-        peaks = self.try_find_peaks()
-        for peak in peaks:
-            self.peaks.append(PeakSupervisor(energy_view, self.spectrum, peak, peak_width))
+            current = PeakSupervisor(xs, ys, center, gamma)
+            self.peaks.append(current.base)
 
+        self.basenote.peaks = self.peaks.copy()
         return self.peaks.copy()
-
-    # TODO: Fix this croutch. Also needs architectural touch.
-    def define_peak_width(self) -> int:
-        fwhm = 0.826
-        tenth_width = fwhm / np.log10(2)
-        return int(tenth_width / self.scale_value)
     
     def truncate_spectrum(self) -> None:
         count = 0
-        for i in range(len(self.spectrum)):
+        for i in range(len(self.basenote.spectrum)):
             if count >= 50:
-                self.spectrum = self.spectrum[:i - 20]
+                self.basenote.spectrum = self.basenote.spectrum[:i - 20]
                 break
 
-            if self.spectrum[i] == 0:
+            if self.basenote.spectrum[i] == 0:
                 count += 1
             else:
                 count = 0

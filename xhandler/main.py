@@ -1,9 +1,10 @@
 import os, sys
 import threading
 
-from analysis import *
-from workbook import *
-from shunting_yard import *
+from base import Notebook, Peak
+from analysis import Analytics, PeakSupervisor
+from workbook import WorkbookMaster, WorkbookParser
+from shunting_yard import ReactionMaster, Reaction
 
 import numpy as np
 import matplotlib.pyplot as pyplot
@@ -12,7 +13,7 @@ from matplotlib.backend_bases import MouseEvent
 
 SELECTED_DOTS_X = []
 SELECTED_DOTS_Y = []
-CACHED_SPECTRES: list[Analytics] = []
+CACHED_SPECTRES: list[Notebook] = []
 
 
 class Sleuth:
@@ -68,9 +69,9 @@ class Observer:
         self.figure.canvas.draw()
 
     def draw_peak(self, peak: PeakSupervisor) -> None:
-        gauss = peak.gaussian
+        curve = peak.lorentzian
 
-        self.axes.plot(gauss.three_sigma(), gauss.function(), color='red')
+        self.axes.plot(curve.three_sigma(), curve.pdf(), color='red')
         self.figure.canvas.draw()
 
     def scat_dots(self, xs: np.ndarray, ys: np.ndarray) -> None:
@@ -140,7 +141,7 @@ class Commandor:
             return self.open()
         
         self.__open_spectrum(comm)
-        return f'Spectrum of {self.analitics.angle} was opened.'
+        return f'Spectrum of {self.analitics.basenote.angle} was opened.'
     
     def __open_spectrum(self, pretend: str) -> None:
         pretend = float(pretend)
@@ -212,24 +213,21 @@ class Commandor:
         print('The last picked 2 points will be used for calibration.')
         input('Please, press enter to continue, when you finish selecting of points.\n')
 
-        self.analitics.calibrate((int(SELECTED_DOTS_X[-1]), int(SELECTED_DOTS_X[-2])))
+        val, e0 = self.analitics.calibrate((int(SELECTED_DOTS_X[-1]), int(SELECTED_DOTS_X[-2])))
 
-        energy_view = self.analitics.scale_value * np.arange(1, len(self.analitics.spectrum) + 1)
-        energy_view += self.analitics.scale_shift
-
-        self.observer.draw_calibrated_spectrum(self.analitics.spectrum, energy_view)
+        self.observer.draw_calibrated_spectrum(self.analitics.basenote.spectrum, self.analitics.basenote.energy_view)
 
         peaks_indexes = self.analitics.try_find_peaks()
-        self.observer.scat_dots(self.analitics.theory_peaks[:len(peaks_indexes)], self.analitics.spectrum[peaks_indexes])
+        self.observer.scat_dots(self.analitics.theory_peaks[:len(peaks_indexes)], self.analitics.basenote.spectrum[peaks_indexes])
 
         return 'calibrated by: ' + \
-        f'E(ch) = {round(self.analitics.scale_value, 3)}ch + {round(self.analitics.scale_shift, 3)}'
+        f'E(ch) = {round(val, 3)}ch + {round(e0, 3)}'
 
     def fit_peak(self) -> str:
         if not self.is_spectrum_opened:
             return 'First open the spectrum.'
 
-        if not self.analitics.is_calibrated:
+        if not self.analitics.basenote.is_calibrated:
             return 'Spectrum must be calibrated first.'
         
         peaks = self.analitics.create_peaks()

@@ -49,14 +49,10 @@ class Gaussian:
     
 
 class Lorentzian:
-    def __init__(self, xy: np.ndarray, mu: np.ndarray, fwhm: np.ndarray) -> None:
-        self.xdata = xy[0]
-        self.ydata = xy[1]
-
+    def __init__(self, mu: float, fwhm: float, area: float) -> None:
         self.mu = mu
         self.fwhm = fwhm
-
-        self.area = self.__approximate()
+        self.area = area
 
     def __str__(self) -> str:
         func = 'L(x) = '
@@ -64,10 +60,6 @@ class Lorentzian:
         func += f'* [{np.round(self.fwhm, 3)} / ((x - {round(self.mu)})^2 + {round(self.fwhm, 3)}^2)]'
 
         return func
-
-    def __approximate(self) -> float:
-        xs = 2 / np.pi * (self.fwhm / (4 * (self.xdata - self.mu) ** 2 + self.fwhm ** 2))
-        return (self.ydata * xs).sum() / (xs ** 2).sum()
     
     def dispersion(self) -> float:
         return self.fwhm / (2 * np.sqrt(2 * np.log(2)))
