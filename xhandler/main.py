@@ -1,7 +1,6 @@
 import os, sys
 import threading
 
-from base import Notebook, Peak
 from analysis import Analytics, PeakSupervisor
 from workbook import WorkbookMaster, WorkbookParser
 from shunting_yard import ReactionMaster, Reaction
@@ -13,7 +12,7 @@ from matplotlib.backend_bases import MouseEvent
 
 SELECTED_DOTS_X = []
 SELECTED_DOTS_Y = []
-CACHED_SPECTRES: list[Notebook] = []
+CACHED_SPECTRES: list[Analytics] = []
 
 
 class Sleuth:
@@ -141,7 +140,7 @@ class Commandor:
             return self.open()
         
         self.__open_spectrum(comm)
-        return f'Spectrum of {self.analitics.basenote.angle} was opened.'
+        return f'Spectrum of {self.analitics.angle} was opened.'
     
     def __open_spectrum(self, pretend: str) -> None:
         pretend = float(pretend)
@@ -157,15 +156,12 @@ class Commandor:
         self.is_spectrum_opened = True
 
     def __open_cached_spectrum(self, angle: float) -> None:
-        analysis = next(i for i in CACHED_SPECTRES if i.angle == angle)
-        if not analysis.is_calibrated:
-            self.observer.draw_uncalibrated_spectrum(analysis.spectrum)
+        prepared = next(i for i in CACHED_SPECTRES if i.angle == angle)
+        if not prepared.is_calibrated:
+            self.observer.draw_uncalibrated_spectrum(prepared.spectrum)
 
-        energy_view = analysis.scale_value * np.arange(1, len(analysis.spectrum) + 1)
-        energy_view += analysis.scale_shift
-
-        self.observer.draw_calibrated_spectrum(analysis.spectrum, energy_view)
-        for p in analysis.peaks:
+        self.observer.draw_calibrated_spectrum(prepared.spectrum, prepared.energy_view())
+        for p in prepared.peaks:
             self.observer.draw_peak(p)
 
     def close(self) -> str:
@@ -215,10 +211,10 @@ class Commandor:
 
         val, e0 = self.analitics.calibrate((int(SELECTED_DOTS_X[-1]), int(SELECTED_DOTS_X[-2])))
 
-        self.observer.draw_calibrated_spectrum(self.analitics.basenote.spectrum, self.analitics.basenote.energy_view)
+        self.observer.draw_calibrated_spectrum(self.analitics.spectrum, self.analitics.energy_view())
 
         peaks_indexes = self.analitics.try_find_peaks()
-        self.observer.scat_dots(self.analitics.theory_peaks[:len(peaks_indexes)], self.analitics.basenote.spectrum[peaks_indexes])
+        self.observer.scat_dots(self.analitics.theory_peaks[:len(peaks_indexes)], self.analitics.spectrum[peaks_indexes])
 
         return 'calibrated by: ' + \
         f'E(ch) = {round(val, 3)}ch + {round(e0, 3)}'
@@ -227,7 +223,7 @@ class Commandor:
         if not self.is_spectrum_opened:
             return 'First open the spectrum.'
 
-        if not self.analitics.basenote.is_calibrated:
+        if not self.analitics.is_calibrated:
             return 'Spectrum must be calibrated first.'
         
         peaks = self.analitics.create_peaks()
@@ -242,7 +238,7 @@ class Commandor:
         self.analitics = None
         self.is_spectrum_opened = False
 
-        return f'Spectrum of {CACHED_SPECTRES[-1].angle} degree was saved. ' + \
+        return f'Spectrum of {CACHED_SPECTRES[-1].angle} degree was saved.\n' + \
                 'To write this to workbook type *write down*'
 
     def error_message(self) -> str:

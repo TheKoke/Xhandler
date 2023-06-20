@@ -3,7 +3,7 @@ from global_const import MASS_EXCESSES, STATES
 
 
 class Nuclei:
-    def __init__(self, nuclons: int, charge: int) -> None:
+    def __init__(self, charge: int, nuclons: int) -> None:
         self.nuclons = nuclons
         self.charge = charge
 
@@ -18,9 +18,10 @@ class Nuclei:
     def states(self) -> list[float]:
         return STATES[(self.charge, self.nuclons)]
     
+    # TODO: Croutch.
     @property
     def wigner_width(self) -> list[float]:
-        pass
+        return [0.826] * len(self.states)
     
     def mass(self, unit: str = 'MeV') -> float:
         if unit == 'MeV':
@@ -49,7 +50,7 @@ class Reaction:
     def __residual_nuclei(self) -> Nuclei:
         nuclon = (self.beam.nuclons + self.target.nuclons) - self.fragment.nuclons
         charge = (self.beam.charge + self.target.charge) - self.fragment.charge
-        return Nuclei(nuclon, charge)
+        return Nuclei(charge, nuclon)
 
     def reaction_quit(self, residual_state: float = 0) -> float:
         q0 = (self.beam.mass_excess + self.target.mass_excess) - (self.fragment.mass_excess + self.residual.mass_excess)

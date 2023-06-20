@@ -11,22 +11,22 @@ class WorkbookParser:
 
         self.all = None
 
-    def find_angle(self, angle: float) -> Analytics:
+    def find_angle(self, angle: float) -> Spectrum:
         return next(analyzed for analyzed in self.all if analyzed.angle == angle)
 
-    def collect_all(self) -> list[Analytics]:
+    def collect_all(self) -> list[Spectrum]:
         if 'workbook.txt' not in os.listdir(self.path):
             return []
 
         all_reports = open(self.path + '\\workbook.txt', 'r').read().split('\n\n')[1:]
         return [self.reverse_parameters(report) for report in all_reports]
 
-    def reverse_parameters(self, report: str) -> Analytics:
-        result = Analytics(self.__get_spectrum(self.spectres_path, self.__get_angle(report)))
+    def reverse_parameters(self, report: str) -> Spectrum:
+        result = Spectrum()
 
+        result.angle = self.__get_angle()
         result.scale_value, result.scale_shift = self.__get_calibration_constants(report)
         result.peaks = self.__get_peaks(report)
-        result.is_calibrated = True
 
         return result
 
@@ -53,15 +53,15 @@ class WorkbookParser:
         position = lines[1].index(info_str) + len(info_str)
         return lines[1][position + 1:]
 
-    #TODO: Implement his method.
+    #TODO: Implement this method.
     def __get_peaks(self, report: str) -> list[PeakSupervisor]:
         lines = report.split('\n')
         info_str = 'Peaks analysis info'
 
-        peaks_start = next(i for i in range(len(lines)) if info_str in lines[i])
+        peaks_start = next(i for i in range(len(lines)) if info_str in lines[i]) + 2
         taken = []
 
-        for i in range(peaks_start + 2, len(lines)):
+        for i in range(peaks_start, len(lines)):
             pass
 
         return taken

@@ -41,7 +41,7 @@ class ReactionMaster:
     def to_nuclei(self, name: str) -> Nuclei:
         nuclons = ReactionMaster.nuclons_from_name(name)
         charge = ReactionMaster.match_charge_by_name(name)
-        return Nuclei(nuclons, charge)
+        return Nuclei(charge, nuclons)
 
     def split_nucleus(self) -> list[str]:
         no_spaces = self.reaction.replace(' ', '')

@@ -40,7 +40,7 @@ class Peak:
         return self.__fwhm / 2
 
 
-class Notebook:
+class Spectrum:
     def __init__(self) -> None:
         self.__angle = 0
         self.__spectrum = np.array([])
@@ -94,13 +94,11 @@ class Notebook:
     
     @scale_shift.setter
     def scale_shift(self, input: float) -> None:
-        if input < 0:
-            raise ValueError("Scale shift can't be negative.")
         self.__scale_shift = input
 
     @property
     def is_calibrated(self) -> bool:
-        return not self.__scale_value == 0 and self.__scale_shift == 0
+        return not self.__scale_value <= 0 and not self.__scale_shift == 0
 
     @property
     def peaks(self) -> list[Peak]:
