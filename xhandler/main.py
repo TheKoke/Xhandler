@@ -70,7 +70,7 @@ class Observer:
     def draw_peak(self, peak: PeakSupervisor) -> None:
         curve = peak.lorentzian
 
-        self.axes.plot(curve.three_sigma(), curve.pdf(), color='red')
+        self.axes.plot(curve.three_sigma(), curve.function(), color='red')
         self.figure.canvas.draw()
 
     def scat_dots(self, xs: np.ndarray, ys: np.ndarray) -> None:

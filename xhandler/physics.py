@@ -149,6 +149,7 @@ class Ionization:
         avogadro = 6.02e23 # mol^-1
         return self.environ.charge * ro * avogadro / self.environ.nuclons # electrons * sm^-3
     
+    # TODO: Croutch.
     def __set_ro(self) -> float:
         if self.detector.lower() == 'ge':
             return 5.323 # g * sm^-3

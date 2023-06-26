@@ -1,6 +1,6 @@
 import numpy as np
 from base import Spectrum, Peak
-from maths import Lorentzian
+from maths import Lorentzian, Gaussian
 from physics import Reaction, Nuclei, Ionization
 
 
@@ -16,7 +16,7 @@ class PeakSupervisor:
         self.peak = Peak()
         self.lorentzian = self.approximate()
 
-    def approximate(self) -> Lorentzian:
+    def approximate(self) -> Gaussian:
         peak_start = self.mu_index - self.width() // 2
         peak_stop = self.mu_index + self.width() // 2
 
@@ -25,7 +25,7 @@ class PeakSupervisor:
 
         area = self.tuck_up_area(self.x_data[peak_start: peak_stop], self.y_data[peak_start: peak_stop])
         self.__save_params(self.mu, self.fwhm, area)
-        return Lorentzian(self.mu, self.fwhm, area)
+        return Gaussian(self.mu, self.fwhm, area)
     
     def width(self) -> int:
         scale_value = (self.x_data[-1] - self.x_data[0]) / len(self.x_data)
@@ -33,7 +33,9 @@ class PeakSupervisor:
         return int(tenth_width / scale_value)
     
     def tuck_up_area(self, xdata: np.ndarray, ydata: np.ndarray) -> float:
-        xs = 2 / np.pi * (self.fwhm / (4 * (xdata - self.mu) ** 2 + self.fwhm ** 2))
+        # xs = 2 / np.pi * (self.fwhm / (4 * (xdata - self.mu) ** 2 + self.fwhm ** 2))
+        sigma = self.fwhm / (2 * np.sqrt(2 * np.log(2)))
+        xs = 1 / np.sqrt(2 * np.pi * sigma ** 2) * np.exp(- (xdata - self.mu) ** 2 / (2 * sigma ** 2))
         return (ydata * xs).sum() / (xs ** 2).sum()
     
     def __save_params(self, mu: float, fwhm: float, area: float) -> None:
@@ -155,6 +157,27 @@ class Analytics:
                 count += 1
             else:
                 count = 0
+
+
+class Sectioner:
+    def __init__(self, reaction: Reaction, spectres: list[Spectrum]) -> None:
+        self.reaction = reaction
+        self.spectres = spectres
+
+    def centermass_cs(self) -> np.ndarray:
+        pass
+
+    def lab_cs(self) -> np.ndarray:
+        pass
+
+    def centermass_angles(self) -> np.ndarray:
+        pass
+
+    def __x_square(self) -> np.ndarray:
+        pass
+
+    def __g_constant(self) -> float:
+        pass
 
 
 if __name__ == '__main__':
