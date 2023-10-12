@@ -1,7 +1,7 @@
 import numpy as np
 from base import Spectrum, Peak
-from maths import Lorentzian, Gaussian
-from physics import Reaction, Nuclei, Ionization
+from maths import Gaussian
+from physics import Reaction
 
 
 class PeakSupervisor:
@@ -102,16 +102,10 @@ class Analytics:
     
     # TODO: Fix this crouch. Needs little bit architectural touch.
     def found_theory_peaks(self) -> list[float]:
-        bete_bloch_1 = Ionization(self.reaction.fragment, Nuclei(34, 58), detector='C4H10')
-        # bete_bloch_2 = Ionization(self.reaction.fragment, Nuclei(28, 14), detector='Si')
-
         collected = []
         for state in self.reaction.residual.states:
             energy_after_reaction = self.reaction.fragment_energy(state, self.base.angle)
-            de_loss = bete_bloch_1.energy_loss(energy_after_reaction, 4)
-            # e_loss = bete_bloch_2.energy_loss(energy_after_reaction - de_loss, 5e-2)
-
-            collected.append(energy_after_reaction - de_loss)
+            collected.append(energy_after_reaction)
 
         return collected
     
@@ -138,7 +132,7 @@ class Analytics:
             xs = self.base.energy_view
             ys = self.base.spectrum
             center = self.energy_view()[theory_indexes[i]]
-            gamma = self.reaction.residual.wigner_width[i]
+            gamma = self.reaction.residual.wigner_widths[i]
 
             current = PeakSupervisor(xs, ys, center, gamma)
             self.peaks.append(current)
