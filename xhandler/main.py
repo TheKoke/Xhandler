@@ -122,6 +122,7 @@ class Commandor:
 
     def take_reaction(self) -> Reaction:
         print('We need info about your nuclear reaction.')
+
         str_react = input('Please write down analyzing nuclear reaction: ')
         energy = float(input('Type here beam energy (in MeV): '))
 
@@ -130,17 +131,18 @@ class Commandor:
     def open(self) -> str:
         print('Finded angles:')
         print(self.sleuth.angles)
+        print('\n')
 
         comm = input('Choose the angle to show they spectrum: ')
         if comm == 'cancel':
-            return 'Opening operation was cancelled.'
+            return 'Opening operation was cancelled.\n'
         
         if not comm.isdigit():
             print('Please, write correctly!')
             return self.open()
         
         self.__open_spectrum(comm)
-        return f'Spectrum of {self.analitics.angle} was opened.'
+        return f'Spectrum of {self.analitics.angle} was opened.\n'
     
     def __open_spectrum(self, pretend: str) -> None:
         pretend = float(pretend)
@@ -173,9 +175,9 @@ class Commandor:
             self.analitics = None
             self.is_spectrum_opened = False
 
-            return f'The spectrum was closed with no save.'
+            return f'The spectrum was closed with no save.\n'
         else:
-            return 'That is a big deal. Save it to apply your changes.'
+            return 'That is a big deal. Save it to apply your changes.\n'
 
     def write_down(self) -> str:
         self.__show_analyzed_spectres()
@@ -185,9 +187,9 @@ class Commandor:
         if answer.isdigit() and float(answer) in [i.angle for i in CACHED_SPECTRES]:
             analyzed = next(i for i in CACHED_SPECTRES if i.angle == float(answer))
             self.workbooker.write(str(analyzed) + '\n\n')
-            return 'Analyzed parameters was wroted to workbook.'
+            return 'Analyzed parameters was wroted to workbook.\n'
         else:
-            return 'Cannot find this angle inside the analyzed ones.'
+            return 'Cannot find this angle inside the analyzed ones.\n'
 
     def __show_analyzed_spectres(self) -> None:
         cached = [i.angle for i in CACHED_SPECTRES]
@@ -216,21 +218,20 @@ class Commandor:
         peaks_indexes = self.analitics.try_find_peaks()
         self.observer.scat_dots(self.analitics.theory_peaks[:len(peaks_indexes)], self.analitics.spectrum[peaks_indexes])
 
-        return 'calibrated by: ' + \
-        f'E(ch) = {round(val, 3)}ch + {round(e0, 3)}'
+        return f'calibrated by: E(ch) = {round(val, 3)}ch + {round(e0, 3)}\n'
 
     def fit_peak(self) -> str:
         if not self.is_spectrum_opened:
-            return 'First open the spectrum.'
+            return 'First open the spectrum.\n'
 
         if not self.analitics.is_calibrated:
-            return 'Spectrum must be calibrated first.'
+            return 'Spectrum must be calibrated first.\n'
         
         peaks = self.analitics.create_peaks()
         for peak in peaks:
             self.observer.draw_peak(peak)
 
-        return 'All peaks was drown.'
+        return 'All peaks was drown.\n'
 
     def save(self) -> str:
         CACHED_SPECTRES.append(self.analitics)
@@ -239,10 +240,10 @@ class Commandor:
         self.is_spectrum_opened = False
 
         return f'Spectrum of {CACHED_SPECTRES[-1].angle} degree was saved.\n' + \
-                'To write this to workbook type *write down*'
+                'To write this to workbook type *write down*\n'
 
     def error_message(self) -> str:
-        return '404 Error... Command not found.'
+        return '404 Error... Command not found.\n'
 
 
 def startup() -> None:

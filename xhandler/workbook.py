@@ -66,6 +66,7 @@ class WorkbookParser:
 
         return taken
     
+    # TODO: Implement this method.
     def __reverse_peak(self, center: float, fwhm: float, calib_coeff: float, calib_e0: float) -> PeakSupervisor:
         fwtm = fwhm / np.log10(2)
 
@@ -75,6 +76,7 @@ class WorkbookParser:
         spectrum = self.__get_spectrum()
 
 
+# TODO: Croutch.
 class WorkbookMaster:
     def __init__(self, spectres_path: str) -> None:
         self.path = os.getcwd()
